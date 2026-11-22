@@ -16,6 +16,7 @@
 #include "log.h"
 #include <mutex>
 #include <string>
+#include "ui_theme.h"
 
 
 typedef enum vbo_status
@@ -689,6 +690,10 @@ void ORBIS_RenderDrawStar(const vec2 *coords, int size);
 void ORBIS_RenderFillRects_fini(void);
 void ORBIS_RenderDrawLines(const vec2* points, int count);
 void ORBIS_RenderFillRects(enum SH_type SL_program, const vec4 &rgba, std::vector<vec4> &rects, int count);
+// Normalized bounds, with corner radius measured in screen pixels.
+void ORBIS_RenderRoundedRect(const vec4 &rgba, const vec4 &rect, float radius, bool outline = false);
+void GLES2_DrawGlassPanel(const vec4 &rect, float opacity = 1.0f);
+void GLES2_DrawFocusCard(const vec4 &rect);
 void GLES2_DrawFillingRect(std::vector<vec4> &r, vec4 &c,  const double percentage);
     void ORBIS_RenderDrawBox(enum SH_type SL_program, const vec4 &rgba, vec4 &r);
 

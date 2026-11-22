@@ -386,7 +386,7 @@ static bool initAppGl()
         }
         
         //      glClearColor(0.f, 0.f, 1.f, 1.f);          // blue RGBA
-        glClearColor(0.1211, 0.1211, 0.1211, 1.); // background color
+        glClearColor(ui_theme::background.r, ui_theme::background.g, ui_theme::background.b, 1.); // background color
 
         ret = glGetError();
         if (ret)
@@ -433,7 +433,7 @@ int main(int argc, char* argv[])
     int ret = -1;
     bool speed1 = true,speed2 = false,speed3 = false;
     vec2 pen = (vec2){ 26, 990 };
-    vec4 col = (vec4){ .8164, .8164, .8125, 1. };
+    vec4 col = ui_theme::text;
 		int      fpsCount = 0;
 		uint64_t fpsTime1 = 0;
 		uint64_t fpsTime2 = 0;

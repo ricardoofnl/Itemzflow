@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "defines.h"
+#include "ui_theme.h"
 #ifdef __ORBIS__
 #include "shaders.h"
 #else
@@ -90,9 +91,9 @@ static texture_font_t *font_from_buffer(unsigned char *data, size_t size, int fo
 static bool ftgl_init_fonts( unsigned char *data, size_t size )
 {
     bool  ret = 1;
-    titl_font = font_from_buffer(data, size, 32);
-     sub_font = font_from_buffer(data, size, 25);
-    main_font = font_from_buffer(data, size, 18);
+    titl_font = font_from_buffer(data, size, ui_theme::title_size);
+     sub_font = font_from_buffer(data, size, ui_theme::body_size);
+    main_font = font_from_buffer(data, size, ui_theme::detail_size);
 
     if( ! titl_font
     ||  !  sub_font
@@ -185,8 +186,7 @@ default_embedded: // fallback on error
 void GLES2_init_submenu( void )
 {
     // load fonts once, don't delete them, but reuse!
-    titl_font = texture_font_new_from_memory(atlas, 32, font_ttf, font_len);
-     sub_font = texture_font_new_from_memory(atlas, 25, font_ttf, font_len);
-    main_font = texture_font_new_from_memory(atlas, 18, font_ttf, font_len);
+    titl_font = texture_font_new_from_memory(atlas, ui_theme::title_size, font_ttf, font_len);
+     sub_font = texture_font_new_from_memory(atlas, ui_theme::body_size, font_ttf, font_len);
+    main_font = texture_font_new_from_memory(atlas, ui_theme::detail_size, font_ttf, font_len);
 }
-

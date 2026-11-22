@@ -7,6 +7,7 @@
 
 #include "defines.h"
 #include "GLES2_common.h"
+#include "ui_geometry.h"
 #include "utils.h"
 #include <atomic>
 #include <pthread.h>
@@ -251,7 +252,7 @@ static double g_Time = .0,
               xoff = .0;
 
 // for Settings (options_panel)
-bool use_reflection = true,
+bool use_reflection = false,
      use_pixelshader = true;
 
 extern ivec4 menu_pos;
@@ -409,6 +410,8 @@ void InitScene_5(int width, int height)
         c[5] = (vec4){0, 0.1145, 0.9412, 1}, // 6. blue
         c[6] = (vec4){0, 1, 0, 1},           // 7. green
         c[7] = (vec4){0, 0, 0, 1};           // 8. black
+    // Texture vertices remain neutral; artwork supplies the only vivid colors.
+    for (int i = 0; i < 4; ++i) c[i] = white;
 
     // the object
     cover_o = VertexBuffer("vertex:3f,color:4f");
@@ -435,12 +438,31 @@ void InitScene_5(int width, int height)
         /* the single different item texture (overlayed) */
         vec3 cover_item_v[8];
         // keep center dividing by 2.f, CW
-        cover_item_v[0] = (vec3){ .956 /2.,   .925 /2., .0 /2.};  // up R
-        cover_item_v[1] = (vec3){-.991 /2.,   .925 /2., .0 /2.};  // up L
-        cover_item_v[2] = (vec3){-.991 /2., -1.195 /2., .0 /2.};  // bm L
-        cover_item_v[3] = (vec3){ .956 /2., -1.195 /2., .0 /2.};  // bm R
+        cover_item_v[0] = (vec3){ .94 /2.,  1.18 /2., .0 /2.};  // up R
+        cover_item_v[1] = (vec3){-.94 /2.,  1.18 /2., .0 /2.};  // up L
+        cover_item_v[2] = (vec3){-.94 /2., -1.18 /2., .0 /2.};  // bm L
+        cover_item_v[3] = (vec3){ .94 /2., -1.18 /2., .0 /2.};  // bm R
 
-        cover_i.append_to_vbo(&cover_item_v[0]);
+        // A cached, rounded artwork mesh replaces the plastic case overlay.
+        // UVs use the same top-down orientation as append_to_vbo.
+        const float left = cover_item_v[1].x, right = cover_item_v[0].x;
+        const float bottom = cover_item_v[2].y, top = cover_item_v[0].y;
+        const auto rim = ui_geometry::rounded_perimeter(left, bottom, right, top, 0.035f);
+        v3f2f4f_t artwork[29];
+        GLuint artwork_indices[84];
+        artwork[0].position = {0.0f, 0.0f, 0.0f};
+        artwork[0].tex_uv = {0.5f, 0.5f};
+        artwork[0].color = {1.0f, 1.0f, 1.0f, 1.0f};
+        for (size_t k = 0; k < rim.size(); ++k) {
+            artwork[k + 1].position = {rim[k].x, rim[k].y, 0.0f};
+            artwork[k + 1].tex_uv = {(rim[k].x - left) / (right - left),
+                                    (top - rim[k].y) / (top - bottom)};
+            artwork[k + 1].color = {1.0f, 1.0f, 1.0f, 1.0f};
+            artwork_indices[k * 3] = 0;
+            artwork_indices[k * 3 + 1] = static_cast<GLuint>(k + 1);
+            artwork_indices[k * 3 + 2] = static_cast<GLuint>((k + 1) % rim.size() + 1);
+        }
+        cover_i.push_back(artwork, 29, artwork_indices, 84);
         /*
           xyz  v[] = { { 1, 1, 1},  {-1, 1, 1},  {-1,-1, 1}, { 1,-1, 1},
                        { 1,-1,-1},  { 1, 1,-1},  {-1, 1,-1}, {-1,-1,-1} };
@@ -503,6 +525,12 @@ void InitScene_5(int width, int height)
             20, 21, 22, 20, 22, 23  // Back: 476 rwb, 465 rbb -> CW is drawn
         };
 
+        for (auto &vertex : cover_vtx) {
+            const vec4 tone = ui_theme::surface;
+            vertex.color = {tone.r, tone.g, tone.b, tone.a};
+            // Slim depth keeps navigation's existing perspective without a case.
+            vertex.position.z *= 0.2f;
+        }
         cover_o.push_back(cover_vtx, 24, cover_idx, 36);
 
         // we have shapes/objects
@@ -786,15 +814,14 @@ static void check_n_draw_textures(item_t & item, int SH_type, vec4 col)
             cover_i.render_tex(fallback_t, SH_type, col);
 
         // overlayed stretched icon0
-        cover_i.render_tex(item.icon.texture.load(), SH_type, col);
+        else
+            cover_i.render_tex(item.icon.texture.load(), SH_type, col);
 
         if(item.flags.usbvapp_not_found)// is_ps5_not_found
           cover_t.render_tex(g_ps4_cover_not_found_tx, SH_type, col);
-        else
-           cover_t.render_tex(cb_tex, SH_type, col);
     }
     else // available cover box texture
-        cover_t.render_tex(item.icon.texture.load(), SH_type, col);
+        cover_i.render_tex(item.icon.texture.load(), SH_type, col);
 }
 
 static void send_cf_action(int plus_or_minus_one, int type)
@@ -3434,7 +3461,7 @@ void DrawScene_4(void)
         {
 
             colo = (1.);
-            if (!xoff)
+            if (!xoff && get->setting_bools[USING_THEME])
                 rot.y = ani_ratio * 360; // coverbox backflip effect
         }
         //

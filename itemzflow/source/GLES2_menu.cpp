@@ -74,9 +74,7 @@ void draw_rect(vec4 &color, float x, float y, float w, float h){
     r.xy = px_pos_to_normalized(&p),
     r.zw = px_pos_to_normalized(&s);
     // gles render the frect
-    std::vector<vec4> v;
-    v.push_back(r);
-    ORBIS_RenderFillRects(USE_COLOR, color, v, 1);
+    ORBIS_RenderRoundedRect(color, r, ui_theme::card_radius);
 }
 
 VertexBuffer vbo_from_rect(vec4& rect)
@@ -141,13 +139,10 @@ void GLES2_layout_init(int req_item_count, layout_t& l)
 /* also, different panel have a different selector */
 static void GLES2_render_selector(view_t v, vec4 &rect)
 {
-    std::vector<vec4> r;
-    r.push_back(rect);
     if (v == ITEMzFLOW || v == ITEM_PAGE || v == ITEM_SETTINGS)
     {   // gles render the selected c
-        ORBIS_RenderFillRects(USE_COLOR, grey, r, 1);
+        GLES2_DrawFocusCard(rect);
         // gles render the glowing blue box
-        ORBIS_RenderDrawBox(USE_UTIME, sele, rect);
     }
 
 }
@@ -512,7 +507,7 @@ static void game_vapp_compose_text(view_t vw, int idx, vec2& pen, bool save_text
             // App Icon that is already loaded, as its in Itemzflow's list
             ic = item.icon.texture;
 
-            vec4 color = (vec4){ .8164, .8164, .8125, 1. };
+            vec4 color = ui_theme::text;
             vec2 pen;
 
             // Loop through the text elements
@@ -744,7 +739,7 @@ static void layout_compose_text(view_t vw, int idx, vec2 &pen, bool save_text)
 
 //#endif
                         log_info("numb_of_updates: %i", numb_of_updates);
-                        vec4 color = (vec4){.8164, .8164, .8125, 1.};
+                        vec4 color = ui_theme::text;
                         vec2 pen;
                         pen.x = 800., pen.y = 750.;
                         tmp = fmt::format("{0:} {1:}", numb_of_updates, (numb_of_updates > 1) ? getLangSTR(LANG_STR::FOUND_MORE_THAN_1_PATCH) : getLangSTR(LANG_STR::ONE_PATCH_FOUND) );
@@ -785,10 +780,10 @@ static void layout_compose_text(view_t vw, int idx, vec2 &pen, bool save_text)
                         l.vbo.add_text(main_font, fmt::format("FW: {}", (update_info.required_fw.at(update_current_index) == 0 || update_current_index >=  update_info.required_fw.size() )? "Unknown": FWString(update_info.required_fw.at(update_current_index))), color, pen);
                         pen.y = 530., pen.x = 820.;
                         update_is_supported = update_info.required_fw.at(update_current_index) <= ps4_fw_version();
-                        vec4 comp_color = {0.0, 0.8, 0.0, 1.0};
+                        vec4 comp_color = ui_theme::success;
 
                         if (!update_is_supported)
-                            comp_color = {1.0, 0.2, 0.2, 1.0}; // RGBA components for light red color
+                            comp_color = ui_theme::danger; // RGBA components for light red color
 
 
                         if(update_info.required_fw.at(update_current_index) != 0 )
@@ -820,7 +815,7 @@ static void layout_compose_text(view_t vw, int idx, vec2 &pen, bool save_text)
                     {
                         patch_current_index = li.multi_sel.pos.y;
                         li.multi_sel.pos.w = trs.controls_text.size();
-                        vec4 color = (vec4){.8164, .8164, .8125, 1.};
+                        vec4 color = ui_theme::text;
                         vec2 pen;
                         pen.x = 800., pen.y = 750.;
                         l.vbo.add_text( sub_font, fmt::format("{0}", trs.patcher_title.at(patch_current_index)), color, pen);
@@ -1472,13 +1467,13 @@ void  GLES2_render_layout_v2(view_t vw)
     vec2 p, pen, s,          // item position and size, in px
         tp,            // used for text position, in px
         b1 = { 30, 30 }, // border between rectangles, in px
-        b2 = { 10, 10 }; // border between text and rectangle, in px
+        b2 = { 16, 12 }; // border between text and rectangle, in px
     vec4 r,             // normalized (float) rectangle
         selection_box,
         tv = 0.;       // temporary vector //tv.xy = b1 * (l.fieldsize - 1.);
 
     // normalized custom color, like Settings
-    vec4 c = (vec4){ 41., 41., 41., 256. } / 256.;
+    vec4 c = ui_theme::surface;
 
     if (vw == ITEMzFLOW || vw == ITEM_PAGE || vw == ITEM_SETTINGS) /* draw a bg rectangle from bound_box + borders */
     {
@@ -1488,15 +1483,13 @@ void  GLES2_render_layout_v2(view_t vw)
         r.xy = px_pos_to_normalized(&p),
             r.zw = px_pos_to_normalized(&s);
         // temporary vector: use for custom color, normalize 0.f-1.f
-        tv = (vec4){ 41., 41., 100., 128. } / 256.;
+        tv = ui_theme::glass;
         // gles render the single rectangle
-        std::vector<vec4> v;
-        v.push_back(r);
-        ORBIS_RenderFillRects(USE_COLOR, tv, v, 1);
+        GLES2_DrawGlassPanel(r);
     }
     if (vw == ITEM_PAGE && ls_p.curr_item == cf_ops::REG_OPTS::RETAIL_UPDATES && skipped_first_X && update_info.update_version.size() > 0)
     {
-        vec4 cc = (vec4){41., 41., 41., 256.} / 256.;
+        vec4 cc = ui_theme::surface;
         draw_rect(cc, 770., 800., 600., -320.);
         if (ic > GL_NULL) {
           render_button(ic, 170., 170., 840., 560., 1.);
@@ -1506,11 +1499,11 @@ void  GLES2_render_layout_v2(view_t vw)
     }
     else if (vw == ITEM_PAGE && ls_p.curr_item == cf_ops::REG_OPTS::TRAINERS && skipped_first_X && patch_count)
     {
-        vec4 cc = (vec4){41., 41., 41., 256.} / 256.;
+        vec4 cc = ui_theme::surface;
         draw_rect(cc, 770., 800., 600., -320.);
     }
     else if(vw == ITEM_PAGE && ls_p.curr_item == cf_ops::VAPP_OPTS::SHOW_APP_INFO && skipped_first_X){
-         vec4 cc = (vec4){ 41., 41., 41., 256. } / 256.;
+         vec4 cc = ui_theme::surface;
          draw_rect(cc, 770., 800., 600., -320.);
          if (ic > GL_NULL) {
             render_button(ic, 128., 128., 1210., 655., 1.);
@@ -1604,7 +1597,9 @@ if (!l.f_rect.empty() && !is_file_browser)
     // basic
     if (vw == ITEMzFLOW  || vw == ITEM_PAGE || vw == ITEM_SETTINGS) // draws the option boxes behind the text
     { // draw all the rectangle array by count, at once
-        ORBIS_RenderFillRects(USE_COLOR, c, l.f_rect, l.f_size);
+        const int count = std::min(l.f_size, static_cast<int>(l.f_rect.size()));
+        for (int i = 0; i < count; ++i)
+            ORBIS_RenderRoundedRect(c, l.f_rect[i], ui_theme::card_radius);
     }
 }
 
@@ -1646,11 +1641,9 @@ if (!l.f_rect.empty() && !is_file_browser)
             // panel is active, highlight with filled rectangle
             if (l.is_active)
             { // custom color, like Settings
-                vec4 c = (vec4){41., 41., 41., 256.} / 256.;
+                vec4 c = ui_theme::surface;
                 // gles render the single iterated rectangle
-                std::vector<vec4> rr;
-                rr.push_back(c);
-                ORBIS_RenderFillRects(USE_COLOR, c, rr, 1);
+                ORBIS_RenderRoundedRect(c, r, ui_theme::card_radius);
 
                 // is item the selected one ?
                 if (i == f_sele)
@@ -1665,7 +1658,7 @@ if (!l.f_rect.empty() && !is_file_browser)
             }
 
             // draw outline rectangle for this item[i]
-            ORBIS_RenderDrawBox(USE_COLOR, grey, r);
+            ORBIS_RenderRoundedRect(ui_theme::border, r, ui_theme::card_radius, true);
 
             // texts: check for its vbo
             if (l.vbo && l.vbo_s < CLOSED)
@@ -1715,11 +1708,8 @@ if (!l.f_rect.empty() && !is_file_browser)
         // panel is active, show selector
         if (l.is_active){ 
             // render new selector
-            std::vector<vec4> sl;
-            sl.push_back(r);
-            ORBIS_RenderFillRects(USE_COLOR, grey, sl, 1);
+            GLES2_DrawFocusCard(r);
             // gles render the glowing blue box
-            ORBIS_RenderDrawBox(USE_UTIME, sele, r);
         }
     }
     // close text vbo
@@ -1950,6 +1940,11 @@ void GLES2_render_list(view_t v)
 // ---------------------------------------------------------------- display ---
 void pixelshader_render()
 {
+    if (shader == GL_NULL) {
+        const vec4 canvas = {-1.0f, -1.0f, 1.0f, 1.0f};
+        ORBIS_RenderRoundedRect(ui_theme::background, canvas, 0.0f);
+        return;
+    }
     curr_Program = shader;
     glUseProgram(curr_Program);
     {
@@ -2059,17 +2054,10 @@ void pixelshader_init(int width, int height)
 
 /* compile, link and use shader set->USING_SB */
 
-if(mz_shader == GL_NULL)
-   mz_shader = CreateProgramFE(0);
-
 if ((shader == GL_NULL && !get->setting_bools[HAS_IMAGE] && get->setting_bools[USING_SB] && if_exists(get->setting_strings[SB_PATH].c_str())))
 {
     fmt::print("[THEME] Loading Shader from {}....", get->setting_strings[SB_PATH]);
     shader = CreateProgramFE(5, get->setting_strings[SB_PATH]);
-}
-else if ((!get->setting_bools[HAS_IMAGE] && !get->setting_bools[USING_SB] && shader == GL_NULL) || (shader == GL_NULL && !get->setting_bools[USING_THEME]))
-{
-    shader = CreateProgramFE(4); // test emb2
 }
  // feedback
 log_info("[%s] program_id=%d (0x%08x)", __FUNCTION__, mz_shader, mz_shader);
@@ -2089,4 +2077,3 @@ void pixelshader_fini(void)
     if (shader)    glDeleteProgram(shader), shader = 0;
     if (mz_shader) glDeleteProgram(mz_shader), mz_shader = 0;
 }
-

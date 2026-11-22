@@ -115,7 +115,7 @@ static void render_ani(NOTIFI::NOTI_LEVELS level, int text_num, int type_num )
        // rgba = (vec4){ 0, 0, 0, 0.7 };
        // break;
     default:
-        rgba = (vec4){ 0, 0, 0, 0.7 };
+        rgba = ui_theme::glass;
         break;
     }
 
@@ -149,9 +149,7 @@ static void render_ani(NOTIFI::NOTI_LEVELS level, int text_num, int type_num )
     }
     /* draw animated background rectangle */
     notify_rect.xz = rect.xy; // grab x1,x2
-    std::vector<vec4> rect_vec;
-    rect_vec.push_back(notify_rect);
-    ORBIS_RenderFillRects(USE_COLOR, rgba, rect_vec, 1);
+    GLES2_DrawGlassPanel(notify_rect, rgba.a / ui_theme::glass.a);
 
     /* draw the icon */
     notify_icon.xz = rect.zw; // grab x1,x2

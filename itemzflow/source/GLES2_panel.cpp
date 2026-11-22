@@ -46,7 +46,7 @@ static std::atomic_bool refresh_clk(true);
 #define SHOW_FMEM 0
 
 void switchTextPositions(vec2 &pen, vec2 origin) {
-    vec4 c = col * .75f;
+    vec4 c = ui_theme::muted;
     uint32_t numb = 70;
     size_t fmem = 1000000;
     std::string tmp;
@@ -157,7 +157,7 @@ void GLES2_Draw_sysinfo(bool is_idle)
         // add border, in px
               origin -= border;
               pen     = origin;
-        vec4 c = col * .75f;
+        vec4 c = ui_theme::muted;
 
 
         if (is_idle){
@@ -228,7 +228,7 @@ void GLES2_Draw_sysinfo(bool is_idle)
         {   
             /* text for disk_free stats */
             pen = (vec2){ 26, 100 };
-            vec4 c = col * .75f;
+            vec4 c = ui_theme::muted;
             //
 #if defined (__ORBIS__)
             if (usbpath() != -1)
@@ -314,5 +314,4 @@ void GLES2_refresh_sysinfo(void)
 {   // will trigger t_vbo refresh (all happen in renderloop)
     refresh_clk = true;
 }
-
 

@@ -9,6 +9,7 @@
 #include "defines.h"
 #include "GLES2_common.h"
 #include "utils.h"
+#include "ui_geometry.h"
 #ifdef __ORBIS__
 #include "shaders.h"
 #else
@@ -25,6 +26,8 @@ static vec4   color = { 1., 0., .5, 1. }; // current RGBA color
 static GLint  a_position_location;
 static GLint  u_color_location;
 static GLint  u_time_location;
+static GLint solid_position_location;
+static GLint solid_color_location;
  // from main.c
 extern double u_t;
 
@@ -71,6 +74,8 @@ void ORBIS_RenderFillRects_init(int width, int height)
     curr_Program = glsl_Program[0];
     // select for setup
     glUseProgram(curr_Program);
+    solid_position_location = glGetAttribLocation(curr_Program, "a_Position");
+    solid_color_location = glGetUniformLocation(curr_Program, "u_color");
     // reshape
     glViewport(0, 0, width, height);
 }
@@ -187,6 +192,83 @@ void ORBIS_RenderFillRects(enum SH_type SL_program, const vec4 &rgba, std::vecto
     glDisable(GL_BLEND);
     // release VBO, texture, program, ...
     glUseProgram(0);
+}
+
+void ORBIS_RenderRoundedRect(const vec4 &rgba, const vec4 &rect, float radius, bool outline)
+{
+    if (rgba.a <= 0.0f || resolution.x <= 0.0f || resolution.y <= 0.0f ||
+        rect.x == rect.z || rect.y == rect.w) return;
+
+    const auto points = ui_geometry::rounded_perimeter(
+        (rect.x + 1.0f) * resolution.x * 0.5f,
+        (rect.y + 1.0f) * resolution.y * 0.5f,
+        (rect.z + 1.0f) * resolution.x * 0.5f,
+        (rect.w + 1.0f) * resolution.y * 0.5f, radius);
+    GLfloat vertices[60];
+    int count = 0;
+    if (!outline) {
+        vertices[count++] = (rect.x + rect.z) * 0.5f;
+        vertices[count++] = (rect.y + rect.w) * 0.5f;
+    }
+    for (const auto &point : points) {
+        vertices[count++] = 2.0f * point.x / resolution.x - 1.0f;
+        vertices[count++] = 2.0f * point.y / resolution.y - 1.0f;
+    }
+    if (!outline) {
+        vertices[count++] = vertices[2];
+        vertices[count++] = vertices[3];
+    }
+
+    glUseProgram(glsl_Program[USE_COLOR]);
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // Client-side vertices must not be interpreted as an offset into a VBO.
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribPointer(solid_position_location, 2, GL_FLOAT, GL_FALSE, 0, vertices);
+    glEnableVertexAttribArray(solid_position_location);
+    glUniform4f(solid_color_location, rgba.r, rgba.g, rgba.b, rgba.a);
+    glDrawArrays(outline ? GL_LINE_LOOP : GL_TRIANGLE_FAN, 0, count / 2);
+    glDisableVertexAttribArray(solid_position_location);
+    glDisable(GL_BLEND);
+    glUseProgram(0);
+}
+
+void GLES2_DrawGlassPanel(const vec4 &rect, float opacity)
+{
+    if (rect.x == rect.z || rect.y == rect.w) return;
+    opacity = std::max(0.0f, std::min(opacity, 1.0f));
+    vec4 fill = ui_theme::glass, edge = ui_theme::border, light = ui_theme::sheen;
+    fill.a *= opacity;
+    edge.a *= opacity;
+    light.a *= opacity;
+    ORBIS_RenderRoundedRect(fill, rect, ui_theme::panel_radius);
+    ORBIS_RenderRoundedRect(edge, rect, ui_theme::panel_radius, true);
+    if (resolution.x <= 0.0f || resolution.y <= 0.0f) return;
+    const float inset = 2.0f * ui_theme::panel_radius / resolution.x;
+    const float left = std::min(rect.x, rect.z) + inset;
+    const float right = std::max(rect.x, rect.z) - inset;
+    const float top = std::max(rect.y, rect.w) - 2.0f / resolution.y;
+    if (right > left) {
+        const vec4 highlight = {left, top - 2.0f / resolution.y, right, top};
+        ORBIS_RenderRoundedRect(light, highlight, 0.5f);
+    }
+}
+
+void GLES2_DrawFocusCard(const vec4 &rect)
+{
+    if (rect.x == rect.z || rect.y == rect.w) return;
+    ORBIS_RenderRoundedRect(ui_theme::selected, rect, ui_theme::card_radius);
+    ORBIS_RenderRoundedRect(ui_theme::accent, rect, ui_theme::card_radius, true);
+    // A solid inset rail makes controller focus visible without a pulsing glow.
+    if (resolution.x <= 0.0f || resolution.y <= 0.0f) return;
+    const float left = std::min(rect.x, rect.z) + 12.0f / resolution.x;
+    const float bottom = std::min(rect.y, rect.w) + 20.0f / resolution.y;
+    const float top = std::max(rect.y, rect.w) - 20.0f / resolution.y;
+    if (top > bottom) {
+        const vec4 rail = {left, bottom, left + 6.0f / resolution.x, top};
+        ORBIS_RenderRoundedRect(ui_theme::accent, rail, 1.5f);
+    }
 }
 
 /* draw filling color bar */

@@ -150,7 +150,7 @@ vec3 offset;
 vec4 sele, // default for selection (blue)
 grey, // rect fg
 white = (vec4)(1.),
-col = (vec4){ .8164, .8164, .8125, 1. }, // text fg
+col = ui_theme::text, // text fg
 t_sel;
 
 extern double u_t;
@@ -212,8 +212,8 @@ void init_ItemzCore(int w, int h)
     // reset player pos
     p1_pos = (vec2)(0);
     // normalize colors
-    sele = (vec4){ 29, 134, 240, 256 } / 256, // blue
-        grey = (vec4){ 66,  66,  66, 256 } / 256; // fg
+    sele = ui_theme::accent, // blue
+        grey = ui_theme::surface; // fg
 
     /* first, scan folder, populate Installed_Apps */
     loadmsg(getLangSTR(LANG_STR::LOADING_GAME_LIST));

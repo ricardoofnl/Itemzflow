@@ -748,7 +748,9 @@ bool LoadOptions(ItemzSettings *set) {
   else
     set->setting_strings[DUMPER_PATH] = "/mnt/usb0";
 
-  set->setting_strings[FNT_PATH] = asset_path("fonts/default.ttf");
+  set->setting_strings[FNT_PATH] = asset_path("fonts/HelveticaWorld-Multi.ttf");
+  if (!if_exists(set->setting_strings[FNT_PATH].c_str()))
+    set->setting_strings[FNT_PATH] = asset_path("fonts/default.ttf");
   if(!if_exists(set->setting_strings[FNT_PATH].c_str())) {
     log_error("Default Font not found, using a diffferent system font");
     set->setting_strings[FNT_PATH] = "/system_ex/app/NPXS20113/bdjstack/lib/fonts/SCE-PS3-RD-R-LATIN.TTF";
